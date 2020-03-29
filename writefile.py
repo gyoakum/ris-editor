@@ -5,6 +5,53 @@ from parse_error import ParseError
 from text_parser import parse_helpfile
 
 
+def colorify(string, color):
+    '''Add ANSI escape codes to color console output'''
+    colors = {
+        'black': '\u001b[30m',
+        'red': '\u001b[31m',
+        'green': '\u001b[32m',
+        'yellow': '\u001b[33m',
+        'blue': '\u001b[34m',
+        'magenta': '\u001b[35m',
+        'cyan': '\u001b[36m',
+        'white': '\u001b[37m'
+    }
+    reset = '\u001b[0m'
+    if color not in colors:
+        raise ValueError('{} not a recognized color'.format(color))
+    return colors[color] + str(string) + reset
+
+
+class Logger:
+
+    def __init__(self, color=True):
+        self.color = color
+
+    def warn(self, message, line=None, line_number=0):
+        """Print the warning message"""
+        print('{}: {}'.format(
+            colorify('Warning', 'yellow') if self.color else 'Warning',
+            message),
+            file=sys.stderr)
+        if line and line_number:
+            if self.color:
+                print('{} {}'.format(
+                    colorify(line_number, 'magenta'),
+                    line.rstrip('\r\n')),
+                    file=sys.stderr)
+            else:
+                print('  in line {} "{}"'.format(line_number,
+                    line.rstrip('\r\n')),
+                    file=sys.stderr)
+        elif err.line_number:
+            print('  in line {}'.format(err.line_number),
+                    file=sys.stderr)
+        elif err.line:
+            print('  in "{}"'.format(err.line.rstrip('\r\n')),
+                    file=sys.stderr)
+
+
 def create_headers(records, offset = 4):
     '''Create an array of header entry tuples for looking up the records'''
     # Each header tuple is 12 bytes, and the first record begins after the
@@ -34,9 +81,10 @@ def write_file(help_file, records):
 def main(source, output='output.cdr'):
     '''Read in the text version of a help file and produce a binary file'''
     records = []
+    logger = Logger()
     with open(source) as f:
         try:
-            records = parse_helpfile(f)
+            records = parse_helpfile(f, warn=logger.warn)
         except ParseError as err:
             print(err, file=sys.stderr)
             if err.line_number and err.line:

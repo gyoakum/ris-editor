@@ -11,6 +11,9 @@ def contains_lowercase(line):
     """Checks if the string contains a a character [a-z]"""
     return bool(re.search(r'[a-z]', line))
 
+def noop(*args, **kargs):
+    pass
+
 
 def check_line(line, permissive = True):
     '''Validate the line in the help file'''
@@ -41,7 +44,7 @@ def check_line(line, permissive = True):
         return line
 
 
-def parse_helpfile(help_file, allow_lowercase=True):
+def parse_helpfile(help_file, allow_lowercase=True, warn=noop):
     '''Read a plaintext help file and create a list of records'''
     records = []
     current_record = None
@@ -52,6 +55,7 @@ def parse_helpfile(help_file, allow_lowercase=True):
     for line_number, line in enumerate(help_file, start = 1):
         # print('{:0>3} {}'.format(line_number, line.rstrip()))
         if line.startswith(';='):
+            # warn('New record', line=line, line_number=line_number)
             if current_record and not options_set:
                 message = 'Record "{}" must contain a % settings line'
                 raise ParseError(message.format(current_record.code),
