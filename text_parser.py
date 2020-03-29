@@ -7,6 +7,11 @@ from help_record import HelpRecord
 MAX_LINE_LENGTH = 40
 
 
+def contains_lowercase(line):
+    """Checks if the string contains a a character [a-z]"""
+    return bool(re.search(r'[a-z]', line))
+
+
 def check_line(line):
     '''Validate the line in the help file'''
     if line.startswith(';='):
@@ -31,7 +36,7 @@ def check_line(line):
         return line
 
 
-def parse_helpfile(help_file):
+def parse_helpfile(help_file, allow_lowercase=True):
     '''Read a plaintext help file and create a list of records'''
     records = []
     current_record = None
@@ -82,6 +87,13 @@ def parse_helpfile(help_file):
         else:
             match = check_line(line.rstrip('\r\n'))
             if match is not None:
+                if contains_lowercase(match):
+                    if allow_lowercase:
+                        match = match.upper()
+                    else:
+                        raise ParseError('Lowercase text is not permitted',
+                                line=line,
+                                line_number=line_number)
                 try:
                     current_record.add_line(match)
                 except ValueError:
