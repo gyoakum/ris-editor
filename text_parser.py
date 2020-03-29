@@ -78,6 +78,11 @@ def parse_helpfile(help_file, allow_lowercase=True):
             code_set.add(match)
             options_set = False
         elif line.startswith('%'):
+            if not current_record:
+                raise ParseError(
+                        'Invalid placement of % line outside of record',
+                        line=line,
+                        line_number=line_number)
             if options_set:
                 raise ParseError('Line length and mode already set',
                         line=line,
@@ -91,6 +96,11 @@ def parse_helpfile(help_file, allow_lowercase=True):
                         line=line,
                         line_number=line_number)
         elif line.startswith('.'):
+            if not current_record:
+                raise ParseError(
+                        'Invalid use of color specifier outside of record',
+                        line=line,
+                        line_number=line_number)
             match = check_line(line.rstrip())
             if match:
                 current_record.add_color(match)
@@ -99,10 +109,16 @@ def parse_helpfile(help_file, allow_lowercase=True):
                         line=line,
                         line_number=line_number)
         elif line.startswith(';'):
-            match = check_line(line.rstrip())
-            current_record.add_comment(match)
+            if current_record:
+                match = check_line(line.rstrip())
+                current_record.add_comment(match)
         else:
             match = check_line(line.rstrip('\r\n'))
+            if not current_record:
+                raise ParseError(
+                        'Invalid placement of text before record definition',
+                        line=line,
+                        line_number=line_number)
             if match is not None:
                 if contains_lowercase(match):
                     if allow_lowercase:
