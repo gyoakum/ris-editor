@@ -40,13 +40,14 @@ def main(source, output='output.cdr'):
         except ParseError as err:
             print(err, file=sys.stderr)
             if err.line_number and err.line:
-                print('in line {} "{}"'.format(err.line_number, err.line),
+                print('in line {} "{}"'.format(err.line_number,
+                    err.line.rstrip('\r\n')),
                         file=sys.stderr)
             elif err.line_number:
                 print('in line {}'.format(err.line_number),
                         file=sys.stderr)
             elif err.line:
-                print('in "{}"'.format(err.line),
+                print('in "{}"'.format(err.line.rstrip('\r\n')),
                         file=sys.stderr)
             return
     if output:

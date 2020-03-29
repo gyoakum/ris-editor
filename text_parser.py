@@ -49,7 +49,7 @@ def parse_helpfile(help_file, allow_lowercase=True):
     code_set = set()
     options_set = False
     # Put inside a loop
-    for line_number, line in enumerate(help_file):
+    for line_number, line in enumerate(help_file, start = 1):
         # print('{:0>3} {}'.format(line_number, line.rstrip()))
         if line.startswith(';='):
             if current_record and not options_set:
