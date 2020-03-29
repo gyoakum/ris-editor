@@ -12,16 +12,21 @@ def contains_lowercase(line):
     return bool(re.search(r'[a-z]', line))
 
 
-def check_line(line):
+def check_line(line, permissive = True):
     '''Validate the line in the help file'''
     if line.startswith(';='):
         match = re.search(r'^;=\s*(\w{1,6})\s*$', line)
         return match.group(1) if match else None
     elif line.startswith('%'):
-        match = re.search(r'^%(\d{2}):(\d)$', line)
-        return int(match.group(1)), int(match.group(2)) if match else None
+        pattern = r'^%(\d{2})\D(\d)\s*$' if permissive else r'^%(\d{2}):(\d)$'
+        match = re.search(pattern, line)
+        if match:
+            return int(match.group(1)), int(match.group(2))
+        else:
+            return None
     elif line.startswith('.'):
-        match = re.search(r'^\.(\d{3})$', line)
+        pattern = r'^\.(\d{3})(\s+;.*)?\s*$' if permissive else r'^\.(\d{3})$';
+        match = re.search(pattern, line)
         if not match or int(match.group(1)) > 255 :
             return None
         else:
