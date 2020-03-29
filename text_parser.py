@@ -47,10 +47,16 @@ def parse_helpfile(help_file, allow_lowercase=True):
     current_record = None
     # Track which id codes have already been used
     code_set = set()
+    options_set = False
     # Put inside a loop
     for line_number, line in enumerate(help_file):
         # print('{:0>3} {}'.format(line_number, line.rstrip()))
         if line.startswith(';='):
+            if current_record and not options_set:
+                message = 'Record "{}" must contain a % settings line'
+                raise ParseError(message.format(current_record.code),
+                        line=line,
+                        line_number=line_number)
             match = check_line(line.rstrip())
             if not match:
                 raise ParseError('Invalid record code',
@@ -70,9 +76,15 @@ def parse_helpfile(help_file, allow_lowercase=True):
                 records.append(current_record)
             current_record = HelpRecord(match)
             code_set.add(match)
+            options_set = False
         elif line.startswith('%'):
+            if options_set:
+                raise ParseError('Line length and mode already set',
+                        line=line,
+                        line_number=line_number)
             match = check_line(line.rstrip())
             if match:
+                options_set = True
                 current_record.set_options(*match)
             else:
                 raise ParseError('Unable to parse % expression',
@@ -110,5 +122,10 @@ def parse_helpfile(help_file, allow_lowercase=True):
                         line=line,
                         line_number=line_number)
     if current_record:
+        if not options_set:
+            message = 'Record "{}" must contain a % settings line'
+            raise ParseError(message.format(current_record.code),
+                    line=line,
+                    line_number=line_number)
         records.append(current_record)
     return records
