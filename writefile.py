@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from parse_error import ParseError
+from errors import ParseError
 from text_parser import parse_helpfile
 
 

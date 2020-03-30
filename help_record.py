@@ -1,5 +1,7 @@
 import re
 
+from errors import LineLengthError
+
 class HelpRecord:
     """An entry specifying dialog text for raceintospace"""
 
@@ -27,8 +29,9 @@ class HelpRecord:
 
     def add_line(self, line):
         if self.max_line_length and len(line) > self.max_line_length:
-            print('{} > {}'.format(len(line), self.max_line_length))
-            raise ValueError('Line longer than specified maximum')
+            raise LineLengthError('Line longer than specified maximum',
+                    max_length = self.max_line_length,
+                    line_length = len(line))
         # elif self.max_lines <= self.line_count:
         self.text.append(line)
         self.line_count += 1

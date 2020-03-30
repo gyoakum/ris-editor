@@ -1,6 +1,6 @@
 import re
 
-from parse_error import ParseError
+from errors import ParseError, LineLengthError
 from help_record import HelpRecord
 
 
@@ -148,8 +148,11 @@ def parse_helpfile(help_file,
                                 line_number=line_number)
                 try:
                     current_record.add_line(match)
-                except ValueError:
-                    raise ParseError('Line exceeds length specifier',
+                except LineLengthError as err:
+                    raise ParseError(
+                            'Line exceeds length specifier ({} vs {})'.format(
+                                err.line_length,
+                                err.max_length),
                             line=line,
                             line_number=line_number)
             else:

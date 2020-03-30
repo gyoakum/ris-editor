@@ -1,4 +1,7 @@
-class ParseError(Exception):
+class Error(Exception):
+    pass
+
+class ParseError(Error):
     '''Indicates an invalid or improper line during parsing'''
 
     def __init__(self, message, line=None, line_number=None):
@@ -14,3 +17,13 @@ class ParseError(Exception):
             return self.message
         else:
             return 'An error occurred during parsing'
+
+class ValidationError(Error):
+    pass
+
+class LineLengthError(Error):
+
+    def __init__(self, message, max_length, line_length):
+        self.message = message
+        self.max_length = max_length
+        self.line_length = line_length
