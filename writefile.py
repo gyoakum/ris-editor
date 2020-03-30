@@ -90,10 +90,12 @@ def write_file(help_file, records):
         help_file.write(record_bytes)
 
 
-def main(source, output='output.cdr'):
+def main(source, output='output.cdr',
+        no_color=False):
     '''Read in the text version of a help file and produce a binary file'''
     records = []
-    logger = Logger()
+    color = False if no_color else sys.stderr.isatty()
+    logger = Logger(color=color)
     with open(source) as f:
         try:
             records = parse_helpfile(f, warn=logger.warn)
@@ -117,5 +119,7 @@ if __name__ == '__main__':
             help='Input file to convert into a cdr')
     parser.add_argument('-o', '--output', default='output.cdr',
             help='Output destination')
+    parser.add_argument('--no-color', default=False, action='store_true',
+            help='Disable color output')
     args = parser.parse_args()
     main(**vars(args))
