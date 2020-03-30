@@ -11,6 +11,11 @@ def contains_lowercase(line):
     """Checks if the string contains a a character [a-z]"""
     return bool(re.search(r'[a-z]', line))
 
+def invalid_char(line, allow_lowercase=True):
+    pattern = r"[^A-Z0-9-+.,:& !@#%()/<>'*^?\u0014]"
+    flags = re.IGNORECASE if allow_lowercase else 0
+    return re.search(pattern, line, flags=flags)
+
 def noop(*args, **kargs):
     pass
 
@@ -19,29 +24,37 @@ def check_line(line, permissive = True):
     '''Validate the line in the help file'''
     if line.startswith(';='):
         match = re.search(r'^;=\s*(\w{1,6})\s*$', line)
-        return match.group(1) if match else None
+        if match:
+            return match.group(1), None
+        else:
+            return None, 'Invalid code'
     elif line.startswith('%'):
         pattern = r'^%(\d{2})\D(\d)\s*$' if permissive else r'^%(\d{2}):(\d)$'
         match = re.search(pattern, line)
         if match:
-            return int(match.group(1)), int(match.group(2))
+            return (int(match.group(1)), int(match.group(2))), None
         else:
-            return None
+            return None, 'Invalid % specifier'
     elif line.startswith('.'):
         pattern = r'^\.(\d{3})(\s+;.*)?\s*$' if permissive else r'^\.(\d{3})$';
         match = re.search(pattern, line)
-        if not match or int(match.group(1)) > 255 :
-            return None
+        if not match:
+            return None, 'Invalid color specifier'
+        elif int(match.group(1)) > 255 :
+            return None, 'Color value out of bounds'
         else:
-            return match.group(1)
+            return match.group(1), None
     elif line.startswith(';'):
         if re.search(r'Longest Line:\s*;$', line):
-            return line[:-1] + '\x19'
-        return line
+            return line[:-1] + '\x19', None
+        return line, None
     else:
         if len(line.encode()) > MAX_LINE_LENGTH:
-            return None
-        return line
+            return None, 'Line exceeds maximum length'
+        char = invalid_char(line)
+        if char:
+            return line, 'Invalid character "{}"'.format(char.group())
+        return line, None
 
 
 def parse_helpfile(help_file,
@@ -62,7 +75,7 @@ def parse_helpfile(help_file,
                 raise ParseError(message.format(current_record.code),
                         line=line,
                         line_number=line_number)
-            match = check_line(line.rstrip())
+            match, issue = check_line(line.rstrip())
             if not match:
                 raise ParseError('Invalid record code',
                         line=line,
@@ -92,7 +105,7 @@ def parse_helpfile(help_file,
                 raise ParseError('Line length and mode already set',
                         line=line,
                         line_number=line_number)
-            match = check_line(line.rstrip())
+            match, issue = check_line(line.rstrip())
             if match:
                 options_set = True
                 current_record.set_options(*match)
@@ -106,7 +119,7 @@ def parse_helpfile(help_file,
                         'Invalid use of color specifier outside of record',
                         line=line,
                         line_number=line_number)
-            match = check_line(line.rstrip())
+            match, issue = check_line(line.rstrip())
             if match:
                 current_record.add_color(match)
             else:
@@ -115,7 +128,7 @@ def parse_helpfile(help_file,
                         line_number=line_number)
         elif line.startswith(';'):
             if current_record:
-                match = check_line(line.rstrip())
+                match, issue = check_line(line.rstrip())
                 current_record.add_comment(match)
         else:
             if not current_record:
@@ -123,7 +136,7 @@ def parse_helpfile(help_file,
                         'Invalid placement of text before record definition',
                         line=line,
                         line_number=line_number)
-            match = check_line(line.rstrip('\r\n'))
+            match, issue = check_line(line.rstrip('\r\n'))
             if match is not None:
                 # Handle trailing lines in record after the number allocated in
                 # the % line.
@@ -146,6 +159,8 @@ def parse_helpfile(help_file,
                         raise ParseError('Lowercase text is not permitted',
                                 line=line,
                                 line_number=line_number)
+                if issue:
+                    warn(issue, line=line, line_number=line_number)
                 try:
                     current_record.add_line(match)
                 except LineLengthError as err:
@@ -156,7 +171,7 @@ def parse_helpfile(help_file,
                             line=line,
                             line_number=line_number)
             else:
-                raise ParseError('Line exceeds maximum length',
+                raise ParseError(issue,
                         line=line,
                         line_number=line_number)
     if current_record:
