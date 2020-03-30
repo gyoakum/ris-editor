@@ -91,14 +91,16 @@ def write_file(help_file, records):
 
 
 def main(source, output='output.cdr',
-        no_color=False):
+        no_color=False, no_trailing=False):
     '''Read in the text version of a help file and produce a binary file'''
     records = []
     color = False if no_color else sys.stderr.isatty()
+    allow_trailing = not no_trailing
     logger = Logger(color=color)
     with open(source) as f:
         try:
-            records = parse_helpfile(f, warn=logger.warn)
+            records = parse_helpfile(f, warn=logger.warn,
+                    allow_trailing=allow_trailing)
         except ParseError as err:
             logger.error(err.message,
                     line=err.line,
@@ -121,5 +123,9 @@ if __name__ == '__main__':
             help='Output destination')
     parser.add_argument('--no-color', default=False, action='store_true',
             help='Disable color output')
+    parser.add_argument('--no-trailing',
+            default=False,
+            action='store_true',
+            help='Forbid trailing lines after those allocated'),
     args = parser.parse_args()
     main(**vars(args))

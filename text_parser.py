@@ -44,7 +44,8 @@ def check_line(line, permissive = True):
         return line
 
 
-def parse_helpfile(help_file, allow_lowercase=True, warn=noop):
+def parse_helpfile(help_file,
+        allow_lowercase=True, allow_trailing=True, warn=noop):
     '''Read a plaintext help file and create a list of records'''
     records = []
     current_record = None
@@ -117,13 +118,27 @@ def parse_helpfile(help_file, allow_lowercase=True, warn=noop):
                 match = check_line(line.rstrip())
                 current_record.add_comment(match)
         else:
-            match = check_line(line.rstrip('\r\n'))
             if not current_record:
                 raise ParseError(
                         'Invalid placement of text before record definition',
                         line=line,
                         line_number=line_number)
+            match = check_line(line.rstrip('\r\n'))
             if match is not None:
+                # Handle trailing lines in record after the number allocated in
+                # the % line.
+                if current_record.line_count > current_record.max_lines:
+                    if allow_trailing:
+                        if not re.search(r'^!?\s*$', match):
+                            warn('Additional line in record "{}"'.format(
+                                current_record.code),
+                                line=line,
+                                line_number=line_number)
+                    else:
+                        raise ParseError('Additional line in record {}'.format(
+                            current_record.code),
+                            line=line,
+                            line_number=line_number)
                 if contains_lowercase(match):
                     if allow_lowercase:
                         match = match.upper()
