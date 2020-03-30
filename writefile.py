@@ -28,13 +28,9 @@ class Logger:
     def __init__(self, color=True):
         self.color = color
 
-    def warn(self, message, line=None, line_number=0):
-        """Print the warning message"""
-        print('{}: {}'.format(
-            colorify('Warning', 'yellow') if self.color else 'Warning',
-            message),
-            file=sys.stderr)
-        if line and line_number:
+    def print_line(self, line=None, line_number=0):
+        """Print the line number and line content"""
+        if line is not None and line_number:
             if self.color:
                 print('{} {}'.format(
                     colorify(line_number, 'magenta'),
@@ -44,12 +40,28 @@ class Logger:
                 print('  in line {} "{}"'.format(line_number,
                     line.rstrip('\r\n')),
                     file=sys.stderr)
-        elif err.line_number:
-            print('  in line {}'.format(err.line_number),
+        elif line_number:
+            print('  in line {}'.format(line_number),
                     file=sys.stderr)
-        elif err.line:
-            print('  in "{}"'.format(err.line.rstrip('\r\n')),
+        elif line is not None:
+            print('  in "{}"'.format(line.rstrip('\r\n')),
                     file=sys.stderr)
+
+    def error(self, message, line=None, line_number=0):
+        """Print an error message"""
+        print('{}: {}'.format(
+            colorify('Error', 'red') if self.color else 'Error',
+            message),
+            file=sys.stderr)
+        self.print_line(line=line, line_number=line_number)
+
+    def warn(self, message, line=None, line_number=0):
+        """Print the warning message"""
+        print('{}: {}'.format(
+            colorify('Warning', 'yellow') if self.color else 'Warning',
+            message),
+            file=sys.stderr)
+        self.print_line(line=line, line_number=line_number)
 
 
 def create_headers(records, offset = 4):
@@ -86,17 +98,9 @@ def main(source, output='output.cdr'):
         try:
             records = parse_helpfile(f, warn=logger.warn)
         except ParseError as err:
-            print(err, file=sys.stderr)
-            if err.line_number and err.line:
-                print('in line {} "{}"'.format(err.line_number,
-                    err.line.rstrip('\r\n')),
-                        file=sys.stderr)
-            elif err.line_number:
-                print('in line {}'.format(err.line_number),
-                        file=sys.stderr)
-            elif err.line:
-                print('in "{}"'.format(err.line.rstrip('\r\n')),
-                        file=sys.stderr)
+            logger.error(err.message,
+                    line=err.line,
+                    line_number=err.line_number)
             return
     if output:
         with open(output, 'wb') as out_file:
@@ -114,5 +118,4 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', default='output.cdr',
             help='Output destination')
     args = parser.parse_args()
-    # print(args)
     main(**vars(args))
