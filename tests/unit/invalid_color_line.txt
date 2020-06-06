@@ -1,0 +1,9 @@
+;= I001
+;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+%02:0
+.011
+INVALID COLOR
+.25
+COLOR SPECIFIERS MUST BE A THREE
+DIGIT NUMBER.
+!
